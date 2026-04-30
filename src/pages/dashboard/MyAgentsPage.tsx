@@ -17,7 +17,7 @@ import {
   FileText,
   Sparkles,
 } from 'lucide-react';
-import { GlassCard, Button, Input, PandoraOrb } from '@/components/ui';
+import { GlassCard, Button, Input } from '@/components/ui';
 
 /**
  * Placeholder agents data

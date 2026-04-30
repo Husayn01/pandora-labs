@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, Mail, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button, Input, PlaceholderLogo } from '@/components/ui';
 
@@ -11,9 +11,13 @@ export default function SignUpPage() {
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-  const { signUp, signInWithGoogle } = useAuth();
-  const navigate = useNavigate();
+  const [confirmationSent, setConfirmationSent] = useState(false);
+  const { signUp, signInWithGoogle, user, loading: authLoading } = useAuth();
+
+  // Redirect if already authenticated
+  if (!authLoading && user) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -31,8 +35,8 @@ export default function SignUpPage() {
       setError(error.message);
       setLoading(false);
     } else {
-      setSuccess(true);
-      setTimeout(() => navigate('/dashboard'), 1500);
+      setConfirmationSent(true);
+      setLoading(false);
     }
   };
 
@@ -55,23 +59,54 @@ export default function SignUpPage() {
             <Link to="/" className="inline-block group">
               <PlaceholderLogo size={48} className="group-hover:opacity-80 transition-opacity" />
             </Link>
-            <h1 className="text-3xl font-thin text-white mt-8 mb-2 uppercase tracking-tight">Create <span className="font-medium">Account</span></h1>
-            <p className="text-sm text-gray-400 font-light">Join Pandora Labs and automate your ops</p>
+            {!confirmationSent && (
+              <>
+                <h1 className="text-3xl font-thin text-white mt-8 mb-2 uppercase tracking-tight">Create <span className="font-medium">Account</span></h1>
+                <p className="text-sm text-gray-400 font-light">Join Pandora Labs and automate your ops</p>
+              </>
+            )}
           </div>
 
           {/* Form */}
           <div className="space-y-6">
-            {success ? (
+            {confirmationSent ? (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-6 bg-[#111] border border-white/10 rounded-2xl"
+                className="text-center py-8"
               >
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                  <UserPlus className="text-white" size={24} />
+                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                  <Mail className="text-white" size={32} />
                 </div>
-                <h3 className="text-lg font-medium text-white mb-2">Account Created!</h3>
-                <p className="text-sm text-gray-400 font-light">Redirecting to your dashboard...</p>
+                <h3 className="text-2xl font-thin text-white mb-3 uppercase tracking-tight">
+                  Check Your <span className="font-medium">Email</span>
+                </h3>
+                <p className="text-sm text-gray-400 font-light max-w-sm mx-auto mb-2">
+                  We've sent a confirmation link to
+                </p>
+                <p className="text-sm text-white font-medium mb-6">{email}</p>
+                <p className="text-xs text-gray-500 font-light max-w-xs mx-auto mb-8">
+                  Click the link in the email to verify your account and access your dashboard. Check your spam folder if you don't see it.
+                </p>
+                <div className="flex flex-col gap-3">
+                  <Link to="/login">
+                    <Button variant="primary" size="md" className="w-full uppercase tracking-widest text-xs">
+                      <ArrowLeft size={14} />
+                      Go to Sign In
+                    </Button>
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setConfirmationSent(false);
+                      setEmail('');
+                      setPassword('');
+                      setFullName('');
+                    }}
+                    className="text-xs text-gray-500 hover:text-white transition-colors cursor-pointer"
+                  >
+                    Use a different email
+                  </button>
+                </div>
               </motion.div>
             ) : (
               <>
@@ -138,12 +173,14 @@ export default function SignUpPage() {
               </>
             )}
 
-            <p className="text-center text-sm text-gray-500 pt-6 border-t border-white/5">
-              Already have an account?{' '}
-              <Link to="/login" className="text-white hover:text-gray-300 font-medium transition-colors border-b border-white/30 hover:border-white pb-0.5">
-                Sign in
-              </Link>
-            </p>
+            {!confirmationSent && (
+              <p className="text-center text-sm text-gray-500 pt-6 border-t border-white/5">
+                Already have an account?{' '}
+                <Link to="/login" className="text-white hover:text-gray-300 font-medium transition-colors border-b border-white/30 hover:border-white pb-0.5">
+                  Sign in
+                </Link>
+              </p>
+            )}
           </div>
         </motion.div>
       </div>

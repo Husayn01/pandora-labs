@@ -12,6 +12,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
 import SignUpPage from '@/pages/SignUpPage';
+import AuthCallbackPage from '@/pages/AuthCallbackPage';
 
 // Protected dashboard
 import DashboardLayout from '@/pages/dashboard/DashboardLayout';
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
           {/* Protected dashboard routes */}
           <Route path="/dashboard" element={<DashboardLayout />}>

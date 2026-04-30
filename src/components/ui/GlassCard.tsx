@@ -8,7 +8,7 @@ import { type HTMLAttributes, forwardRef } from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 
-interface GlassCardProps extends HTMLAttributes<HTMLDivElement> {
+interface GlassCardProps extends Omit<HTMLAttributes<HTMLDivElement>, 'onAnimationStart' | 'onDragStart' | 'onDrag' | 'onDragEnd'> {
   hover?: boolean;
   glow?: boolean;
   padding?: 'sm' | 'md' | 'lg';

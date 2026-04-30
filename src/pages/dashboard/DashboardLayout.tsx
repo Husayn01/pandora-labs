@@ -3,6 +3,7 @@
  * ─────────────────
  * Protected layout wrapper with sidebar navigation.
  * All dashboard pages render inside this layout.
+ * Redirects unauthenticated users to /login.
  */
 
 import { Outlet, Navigate } from 'react-router-dom';
@@ -26,10 +27,9 @@ export default function DashboardLayout() {
   }
 
   // Redirect to login if not authenticated
-  // NOTE: Uncomment the block below once Supabase Auth is configured
-  // if (!user) {
-  //   return <Navigate to="/login" replace />;
-  // }
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <div className="flex min-h-screen">

@@ -8,7 +8,7 @@ import { type ButtonHTMLAttributes, forwardRef } from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onAnimationStart' | 'onDragStart' | 'onDrag' | 'onDragEnd'> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   glow?: boolean;

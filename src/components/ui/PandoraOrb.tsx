@@ -25,7 +25,7 @@ export function PandoraOrb({ size = 'md', className = '', animate = true }: Pand
     <motion.div
       className={`relative ${sizes[size]} ${className}`}
       animate={animate ? { y: [0, -12, 0] } : undefined}
-      transition={animate ? { duration: 5, repeat: Infinity, ease: 'easeInOut' } : undefined}
+      transition={animate ? { duration: 5, repeat: Infinity, ease: 'easeInOut' as const } : undefined}
     >
       {/* Outer glow */}
       <div className="absolute inset-0 rounded-full bg-pandora-500/20 blur-3xl scale-150" />
