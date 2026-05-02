@@ -8,11 +8,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, LayoutDashboard } from 'lucide-react';
 import { Button, PlaceholderLogo } from '@/components/ui';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user } = useAuth();
 
   return (
     <motion.nav
@@ -45,12 +47,23 @@ export function Navbar() {
 
         {/* CTA buttons */}
         <div className="hidden md:flex items-center gap-3">
-          <Link to="/login">
-            <Button variant="ghost" size="sm">Log In</Button>
-          </Link>
-          <Link to="/signup">
-            <Button variant="primary" size="sm">Get Started</Button>
-          </Link>
+          {user ? (
+            <Link to="/dashboard">
+              <Button variant="primary" size="sm" className="group">
+                <LayoutDashboard size={16} />
+                Dashboard
+              </Button>
+            </Link>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="ghost" size="sm">Log In</Button>
+              </Link>
+              <Link to="/signup">
+                <Button variant="primary" size="sm">Get Started</Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile menu toggle */}
@@ -85,12 +98,23 @@ export function Navbar() {
               </a>
               <hr className="border-white/10" />
               <div className="flex flex-col gap-2">
-                <Link to="/login" onClick={() => setMobileOpen(false)}>
-                  <Button variant="outline" size="md" className="w-full">Log In</Button>
-                </Link>
-                <Link to="/signup" onClick={() => setMobileOpen(false)}>
-                  <Button variant="primary" size="md" className="w-full">Get Started</Button>
-                </Link>
+                {user ? (
+                  <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
+                    <Button variant="primary" size="md" className="w-full justify-center">
+                      <LayoutDashboard size={16} />
+                      Dashboard
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link to="/login" onClick={() => setMobileOpen(false)}>
+                      <Button variant="outline" size="md" className="w-full">Log In</Button>
+                    </Link>
+                    <Link to="/signup" onClick={() => setMobileOpen(false)}>
+                      <Button variant="primary" size="md" className="w-full">Get Started</Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>
