@@ -74,11 +74,15 @@ export default function ChatPage() {
   const [inputText, setInputText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
+  const isVoiceModeRef = useRef(false); // always current, safe inside async closures
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [hoveredMsg, setHoveredMsg] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Keep ref in sync with state
+  useEffect(() => { isVoiceModeRef.current = isVoiceMode; }, [isVoiceMode]);
 
   /* ── Fetch conversations ── */
   const loadConversations = useCallback(async () => {
@@ -158,7 +162,7 @@ export default function ChatPage() {
         created_at: new Date().toISOString(), agent_name: data.agentName,
       };
       setMessages(prev => [...prev, agentMsg]);
-      if (isVoiceMode) await playTTS(data.reply);
+      if (isVoiceModeRef.current) await playTTS(data.reply);
     } catch (err: any) {
       setMessages(prev => [...prev, {
         id: `e-${Date.now()}`, sender_type: 'system',
