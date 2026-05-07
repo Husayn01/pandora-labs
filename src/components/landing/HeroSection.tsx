@@ -30,7 +30,7 @@ export function HeroSection() {
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-gray-300 text-xs font-medium mb-8 uppercase tracking-wider"
           >
             <Zap size={12} className="text-white" />
-            AI Operations Swarm
+            The Ultimate Agent Store
           </motion.div>
 
           <motion.h1
@@ -50,8 +50,7 @@ export function HeroSection() {
             transition={{ duration: 0.6, delay: 0.6 }}
             className="text-lg text-gray-400 max-w-lg mb-10 font-light"
           >
-            Pandora is an autonomous AI swarm that handles your startup's operations — lead qualification, 
-            customer support, invoicing, and more.
+            Deploy a coordinated AI swarm in seconds. Browse the Agent Store to install specialized agents for customer support, scheduling, and invoicing — all orchestrated by a central Router Agent.
           </motion.p>
 
           <motion.div

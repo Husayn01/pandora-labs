@@ -25,9 +25,9 @@ export function HowItWorksSection() {
           {/* Left Column - Navigation/Steps */}
           <div className="lg:w-1/4 flex flex-col gap-8">
             <div className="flex flex-col gap-6 border-l border-white/10 pl-6">
-              <div className="text-white font-medium cursor-pointer text-sm tracking-wide">01 / VOICE-FIRST</div>
-              <div className="text-gray-600 hover:text-gray-300 transition-colors cursor-pointer text-sm tracking-wide">02 / AGENTIC SWARM</div>
-              <div className="text-gray-600 hover:text-gray-300 transition-colors cursor-pointer text-sm tracking-wide">03 / EXECUTION</div>
+              <div className="text-white font-medium cursor-pointer text-sm tracking-wide">01 / INSTALL AGENTS</div>
+              <div className="text-gray-600 hover:text-gray-300 transition-colors cursor-pointer text-sm tracking-wide">02 / VOICE COMMANDS</div>
+              <div className="text-gray-600 hover:text-gray-300 transition-colors cursor-pointer text-sm tracking-wide">03 / ROUTER EXECUTION</div>
             </div>
           </div>
 
@@ -49,12 +49,12 @@ export function HowItWorksSection() {
             
             <div className="w-full md:w-1/2 flex flex-col justify-center px-4 md:pr-8 py-6">
               <h3 className="text-2xl font-medium text-white mb-4 leading-snug">
-                How AI is Transforming <br/>Startup Operations
+                How The Swarm Operates
               </h3>
               <p className="text-gray-400 text-sm leading-relaxed mb-8 font-light">
-                Send a voice note on WhatsApp or use the web dashboard. 
-                Pandora's agentic swarm breaks your request into tasks, reasons through them, 
-                and executes autonomously.
+                First, install specialized AI agents from the Store. Then, simply tap the mic and speak your command. 
+                The core Router Agent understands your intent, delegates to the right specialist, and shows you 
+                live progress as tasks are executed.
               </p>
               <div>
                 <a href="#" className="text-xs uppercase tracking-widest text-white border-b border-white/30 pb-1 hover:border-white transition-colors">

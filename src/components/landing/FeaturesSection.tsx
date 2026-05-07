@@ -14,39 +14,39 @@ import { GlassCard } from '@/components/ui';
 const features = [
   {
     icon: Mic,
-    title: 'Voice-First Ops',
+    title: 'Live Voice & Transcription',
     description:
-      'Send a WhatsApp voice note and Pandora handles the rest — scheduling, follow-ups, invoicing, all from a quick message.',
+      'Speak your commands in English, Hausa, Igbo, or Yoruba. Watch Pandora transcribe and process your voice in real-time.',
   },
   {
-    icon: MessageSquare,
-    title: 'Omnichannel Support',
+    icon: Shield,
+    title: 'The Router Agent',
     description:
-      'Meet your customers wherever they are — WhatsApp, SMS, web chat. One AI, every channel, zero missed conversations.',
+      'A permanent, un-editable core orchestrator. It listens to your intent and automatically delegates tasks to the right specialist agent.',
   },
   {
     icon: Brain,
-    title: 'Agentic AI Swarm',
+    title: 'Curated Agent Store',
     description:
-      'Not just one bot — a coordinated swarm of specialized agents that reason, plan, and execute complex business tasks autonomously.',
+      'Stop building from scratch. Browse and install pre-built, production-ready AI agents for specific tasks with a single click.',
   },
   {
     icon: CalendarCheck,
     title: 'Smart Scheduling',
     description:
-      'Pandora books meetings, sends reminders, and reschedules — synced directly with your Google Calendar.',
+      'Install the Appointment Setter agent to book meetings, check availability, and sync directly with your Google Calendar.',
   },
   {
     icon: Receipt,
     title: 'Invoicing & Chasing',
     description:
-      'Generate invoices, send payment links, and chase overdue payments automatically. Never lose revenue to forgotten follow-ups.',
+      'Deploy the Finance agent to generate invoices, send payment links, and chase overdue payments completely autonomously.',
   },
   {
-    icon: Shield,
-    title: 'Ship Your Own Agent',
+    icon: MessageSquare,
+    title: 'Live Task Progress',
     description:
-      "Upload your knowledge base and deploy a branded customer support AI for your clients.",
+      "Watch your agents work in real-time. See live status updates as they reason, plan, and execute multi-step operations.",
   },
 ];
 
@@ -82,11 +82,10 @@ export function FeaturesSection() {
               Capabilities
             </span>
             <h2 className="text-4xl md:text-5xl font-thin tracking-tight mb-6 uppercase">
-              Our <br/><span className="font-medium">Service</span>
+              Agent <br/><span className="font-medium">Marketplace</span>
             </h2>
             <p className="text-gray-400 text-sm leading-relaxed max-w-sm">
-              Pandora replaces the ops team you can&apos;t yet afford. One AI that handles 
-              six departments, 24/7, seamlessly bridging the physical and digital.
+              Pandora replaces the ops team you can&apos;t yet afford. Install the exact agents you need from our curated store, and let the Router Agent coordinate them 24/7.
             </p>
           </motion.div>
         </div>

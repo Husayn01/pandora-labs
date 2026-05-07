@@ -30,6 +30,15 @@ const iconMap: Record<string, LucideIcon> = {
   Brain, Bot, Headphones, Calendar, Receipt, BarChart3,
 };
 
+const categoryBadge: Record<string, string> = {
+  core: 'bg-white/10 text-white border-white/20',
+  communication: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  productivity: 'bg-green-500/10 text-green-400 border-green-500/20',
+  finance: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  analytics: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+  general: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
+};
+
 interface InstalledAgent {
   id: string;
   is_active: boolean;
@@ -54,6 +63,7 @@ export default function MyAgentsPage() {
   const [agents, setAgents] = useState<InstalledAgent[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   const fetchAgents = async () => {
     if (!user) return;
@@ -108,10 +118,14 @@ export default function MyAgentsPage() {
     return 0;
   });
 
+  // Derive unique categories from installed agents
+  const categories = ['all', ...Array.from(new Set(agents.map(a => a.catalog?.category).filter(Boolean)))];
+
   const filtered = sorted.filter(
     (a) =>
-      a.catalog?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.catalog?.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      (selectedCategory === 'all' || a.catalog?.category === selectedCategory) &&
+      (a.catalog?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        a.catalog?.description?.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -138,13 +152,13 @@ export default function MyAgentsPage() {
         </Link>
       </motion.div>
 
-      {/* Search */}
+      {/* Search & Filters */}
       {agents.length > 1 && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
-          className="mb-6"
+          className="mb-6 space-y-4"
         >
           <div className="relative max-w-md">
             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
@@ -156,6 +170,25 @@ export default function MyAgentsPage() {
               className="w-full pl-11 pr-4 py-2.5 rounded-full bg-[#111] border border-white/10 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-white/30 transition-all duration-300"
             />
           </div>
+
+          {/* Category Filter Pills */}
+          {categories.length > 2 && (
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 cursor-pointer capitalize ${
+                    selectedCategory === cat
+                      ? 'bg-white text-black border-white'
+                      : `${categoryBadge[cat] || 'bg-white/5 text-gray-400 border-white/10'} hover:border-white/30`
+                  }`}
+                >
+                  {cat === 'all' ? 'All Agents' : cat}
+                </button>
+              ))}
+            </div>
+          )}
         </motion.div>
       )}
 
@@ -184,17 +217,6 @@ export default function MyAgentsPage() {
                 transition={{ duration: 0.4, delay: index * 0.08 }}
               >
                 <GlassCard className={`group bg-[#0a0a0a] relative flex flex-col h-full ${isRouter ? 'border-white/15' : ''}`}>
-                  {/* Uninstall button (not for Router) */}
-                  {!isRouter && (
-                    <button
-                      onClick={() => handleUninstall(agent.id)}
-                      className="absolute top-4 right-4 text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
-                      title="Uninstall Agent"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
-
                   <div className="flex items-start justify-between mb-4">
                     <div className={`w-12 h-12 rounded-xl border flex items-center justify-center ${isRouter ? 'bg-white/5 border-white/20' : 'bg-[#151515] border-white/10'}`}>
                       <Icon size={22} className="text-white" />
@@ -212,7 +234,7 @@ export default function MyAgentsPage() {
                     </span>
                   </div>
 
-                  <h3 className="text-base font-semibold text-white group-hover:text-gray-300 transition-colors mb-1 pr-6">
+                  <h3 className="text-base font-semibold text-white group-hover:text-gray-300 transition-colors mb-1">
                     {catalog.name}
                   </h3>
                   <p className="text-xs text-gray-400 mb-4 line-clamp-2 font-light flex-1">
@@ -230,7 +252,19 @@ export default function MyAgentsPage() {
 
                   <div className="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-white/5 font-light">
                     <span>{agent.messages_handled || 0} messages</span>
-                    <span>{new Date(agent.installed_at).toLocaleDateString()}</span>
+                    <div className="flex items-center gap-3">
+                      <span>{new Date(agent.installed_at).toLocaleDateString()}</span>
+                      {/* Uninstall button — positioned in footer to avoid overlapping status badge */}
+                      {!isRouter && (
+                        <button
+                          onClick={() => handleUninstall(agent.id)}
+                          className="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                          title="Uninstall Agent"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </GlassCard>
               </motion.div>

@@ -70,6 +70,7 @@ export default function AgentStorePage() {
   const [installedIds, setInstalledIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [installing, setInstalling] = useState<string | null>(null);
   const [installWizard, setInstallWizard] = useState<CatalogAgent | null>(null);
 
@@ -116,9 +117,13 @@ export default function AgentStorePage() {
     }
   };
 
+  // Derive unique categories from catalog (excluding 'core' which is the Router)
+  const categories = ['all', ...Array.from(new Set(catalog.filter(a => !a.is_default).map(a => a.category)))];
+
   const filtered = catalog.filter(
     (a) =>
       !a.is_default &&
+      (selectedCategory === 'all' || a.category === selectedCategory) &&
       (a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         a.description?.toLowerCase().includes(searchQuery.toLowerCase()))
   );
@@ -148,12 +153,12 @@ export default function AgentStorePage() {
         </p>
       </motion.div>
 
-      {/* Search */}
+      {/* Search & Filters */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
-        className="mb-8"
+        className="mb-8 space-y-4"
       >
         <div className="relative max-w-md">
           <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
@@ -164,6 +169,23 @@ export default function AgentStorePage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-11 pr-4 py-2.5 rounded-full bg-[#111] border border-white/10 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-white/30 transition-all duration-300"
           />
+        </div>
+
+        {/* Category Filter Pills */}
+        <div className="flex flex-wrap gap-2">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 cursor-pointer capitalize ${
+                selectedCategory === cat
+                  ? 'bg-white text-black border-white'
+                  : `${categoryBadge[cat] || 'bg-white/5 text-gray-400 border-white/10'} hover:border-white/30`
+              }`}
+            >
+              {cat === 'all' ? 'All Agents' : cat}
+            </button>
+          ))}
         </div>
       </motion.div>
 
