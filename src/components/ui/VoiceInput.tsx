@@ -8,8 +8,8 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mic, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Mic, Loader2 } from 'lucide-react';
 
 interface VoiceInputProps {
   onTranscript: (text: string) => void;
@@ -19,14 +19,7 @@ interface VoiceInputProps {
   autoSendDelay?: number;
 }
 
-type SupportedLang = 'en-US' | 'ha-NG' | 'ig-NG' | 'yo-NG';
 
-const LANGUAGES: { code: SupportedLang; name: string; flag: string }[] = [
-  { code: 'en-US', name: 'English', flag: '🇬🇧' },
-  { code: 'ha-NG', name: 'Hausa', flag: '🇳🇬' },
-  { code: 'ig-NG', name: 'Igbo', flag: '🇳🇬' },
-  { code: 'yo-NG', name: 'Yoruba', flag: '🇳🇬' },
-];
 
 export function VoiceInput({
   onTranscript,
@@ -36,10 +29,8 @@ export function VoiceInput({
   autoSendDelay = 2000,
 }: VoiceInputProps) {
   const [isListening, setIsListening] = useState(false);
-  const [transcript, setTranscript] = useState('');
-  const [interimText, setInterimText] = useState('');
-  const [selectedLang, setSelectedLang] = useState<SupportedLang>('en-US');
-  const [showLangPicker, setShowLangPicker] = useState(false);
+  const [, setTranscript] = useState('');
+  const [, setInterimText] = useState('');
   const [error, setError] = useState('');
   const [audioLevel, setAudioLevel] = useState(0);
   const [isSpeakingWelcome, setIsSpeakingWelcome] = useState(false);
@@ -156,7 +147,7 @@ export function VoiceInput({
 
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = new SR();
-    recognition.lang = selectedLang;
+    recognition.lang = 'en-US';
     recognition.interimResults = true;
     recognition.continuous = true;
     recognition.maxAlternatives = 1;
@@ -221,7 +212,7 @@ export function VoiceInput({
 
     recognitionRef.current = recognition;
     recognition.start();
-  }, [selectedLang, hasWebSpeech, onProgress, startAudioVisualization, stopAudioVisualization, resetSilenceTimer]);
+  }, [hasWebSpeech, onProgress, startAudioVisualization, stopAudioVisualization, resetSilenceTimer]);
 
   /* ── Toggle Listening ── */
   const toggleListening = useCallback(async () => {
@@ -264,10 +255,18 @@ export function VoiceInput({
         };
         audio.play();
       } catch (_) {
-        // Fallback to browser TTS
+        // Fallback to browser TTS with best available voice
         setIsSpeakingWelcome(false);
         const msg = new SpeechSynthesisUtterance("Hi, I'm Pandora. How can I help you today?");
         msg.lang = 'en-US';
+        const voices = window.speechSynthesis.getVoices();
+        const preferred = voices.find(v => v.name.includes('Google UK English Female'))
+          || voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes('female'))
+          || voices.find(v => v.lang.startsWith('en'))
+          || voices[0];
+        if (preferred) msg.voice = preferred;
+        msg.rate = 1.0;
+        msg.pitch = 1.0;
         msg.onend = () => startListeningCore();
         msg.onerror = () => startListeningCore();
         window.speechSynthesis.speak(msg);
@@ -286,195 +285,66 @@ export function VoiceInput({
     };
   }, [stopAudioVisualization]);
 
-  const currentLang = LANGUAGES.find(l => l.code === selectedLang) || LANGUAGES[0];
-  const fullText = transcript + interimText;
+
 
   return (
-    <div className={`relative flex flex-col items-center ${className}`}>
-
-      {/* ── Dynamic Orb ── */}
+    <div className={`relative flex items-center ${className}`}>
+      {/* ── Compact Orb ── */}
       <div className="relative group cursor-pointer" onClick={toggleListening}>
 
-        {/* Outer glow */}
+        {/* Glow */}
         {(isListening || isSpeakingWelcome) && (
-          <motion.div
-            className="absolute -inset-4 rounded-full blur-2xl pointer-events-none"
+          <motion.div className="absolute -inset-2 rounded-full blur-xl pointer-events-none"
             style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.4), rgba(6,182,212,0.3), transparent 70%)' }}
-            animate={{
-              scale: isListening ? 1 + audioLevel * 1.8 : [1, 1.1, 1],
-              opacity: isListening ? 0.6 + audioLevel * 0.4 : [0.4, 0.7, 0.4],
-            }}
-            transition={
-              isListening
-                ? { scale: { duration: 0.08 }, opacity: { duration: 0.08 } }
-                : { duration: 2, repeat: Infinity, ease: 'easeInOut' }
-            }
-          />
+            animate={{ scale: isListening ? 1 + audioLevel * 1.5 : [1, 1.08, 1], opacity: isListening ? 0.6 + audioLevel * 0.4 : [0.4, 0.65, 0.4] }}
+            transition={isListening ? { duration: 0.08 } : { duration: 2, repeat: Infinity, ease: 'easeInOut' }} />
         )}
 
-        {/* Rotating ring when listening */}
+        {/* Ring */}
         {isListening && (
-          <motion.div
-            className="absolute -inset-2 rounded-full pointer-events-none"
-            style={{
-              background: 'conic-gradient(from 0deg, rgba(168,85,247,0.6) 0%, rgba(6,182,212,0.6) 50%, transparent 100%)',
-              borderRadius: '50%',
-            }}
-            animate={{ rotate: 360 }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-          />
+          <motion.div className="absolute -inset-1 rounded-full pointer-events-none"
+            style={{ background: 'conic-gradient(from 0deg, rgba(168,85,247,0.5) 0%, rgba(6,182,212,0.5) 50%, transparent 100%)' }}
+            animate={{ rotate: 360 }} transition={{ duration: 3, repeat: Infinity, ease: 'linear' }} />
         )}
 
-        {/* Main orb body */}
+        {/* Body */}
         <motion.div
-          className={`relative z-10 w-16 h-16 rounded-full flex items-center justify-center overflow-hidden transition-all duration-300 ${
-            isListening
-              ? 'bg-black shadow-[0_0_40px_rgba(168,85,247,0.6)]'
-              : isSpeakingWelcome
-              ? 'bg-[#111] border border-white/20'
-              : 'bg-[#111] border border-white/10 hover:border-white/30 hover:bg-[#1a1a1a] shadow-lg'
+          className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden transition-all duration-200 ${
+            isListening ? 'bg-black shadow-[0_0_24px_rgba(168,85,247,0.5)]'
+            : isSpeakingWelcome ? 'bg-[#111] border border-white/20'
+            : 'bg-[#151515] border border-white/[0.08] hover:border-white/20 hover:bg-[#1a1a1a]'
           }`}
-          animate={isListening ? { scale: 1 + audioLevel * 0.12 } : { scale: 1 }}
-          transition={{ type: 'spring', bounce: 0.4, duration: 0.15 }}
-        >
+          animate={isListening ? { scale: 1 + audioLevel * 0.1 } : { scale: 1 }}
+          transition={{ type: 'spring', bounce: 0.3, duration: 0.12 }}>
+
           {isSpeakingWelcome ? (
-            /* Speaking animation */
-            <div className="flex gap-1 items-end h-6">
-              {[0, 1, 2, 3, 4].map(i => (
-                <motion.div
-                  key={i}
-                  className="w-1 bg-gradient-to-t from-purple-500 to-cyan-400 rounded-full"
-                  animate={{ height: ['6px', `${10 + i * 4}px`, '6px'] }}
-                  transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.1, ease: 'easeInOut' }}
-                />
+            <div className="flex gap-0.5 items-end h-4">
+              {[0, 1, 2, 3].map(i => (
+                <motion.div key={i} className="w-0.5 bg-gradient-to-t from-purple-500 to-cyan-400 rounded-full"
+                  animate={{ height: ['4px', `${6 + i * 3}px`, '4px'] }}
+                  transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.1, ease: 'easeInOut' }} />
               ))}
             </div>
           ) : isListening ? (
-            /* Active listening — layered orb interior */
             <div className="absolute inset-0 flex items-center justify-center">
-              <motion.div
-                className="absolute inset-0 opacity-70"
-                animate={{ rotate: -360 }}
-                transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-                style={{
-                  background: 'conic-gradient(from 0deg, transparent, rgba(168,85,247,0.9) 25%, transparent 50%, rgba(6,182,212,0.9) 75%, transparent)',
-                }}
-              />
-              <motion.div
-                className="absolute inset-2 rounded-full bg-gradient-to-tr from-pink-500/80 to-cyan-500/80"
-                animate={{
-                  scale: [0.85, 1 + audioLevel * 0.5, 0.85],
-                  opacity: [0.7, 1, 0.7],
-                }}
-                transition={{ duration: 0.1 }}
-              />
-              <motion.div
-                className="absolute inset-4 rounded-full bg-white blur-sm"
-                animate={{ scale: [0.7, 1 + audioLevel * 1, 0.7] }}
-                transition={{ duration: 0.1 }}
-              />
+              <motion.div className="absolute inset-0 opacity-60" animate={{ rotate: -360 }}
+                transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
+                style={{ background: 'conic-gradient(from 0deg, transparent, rgba(168,85,247,0.9) 25%, transparent 50%, rgba(6,182,212,0.9) 75%, transparent)' }} />
+              <motion.div className="absolute inset-1.5 rounded-full bg-gradient-to-tr from-pink-500/80 to-cyan-500/80"
+                animate={{ scale: [0.85, 1 + audioLevel * 0.4, 0.85], opacity: [0.7, 1, 0.7] }} transition={{ duration: 0.1 }} />
+              <motion.div className="absolute inset-3 rounded-full bg-white/90 blur-[2px]"
+                animate={{ scale: [0.7, 1 + audioLevel * 0.8, 0.7] }} transition={{ duration: 0.1 }} />
             </div>
           ) : (
-            <Mic size={22} className="text-gray-400 group-hover:text-white transition-colors" />
+            <Mic size={16} className="text-gray-400 group-hover:text-white transition-colors" />
           )}
         </motion.div>
-
-        {/* Labels */}
-        {!isListening && !isSpeakingWelcome && (
-          <div className="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 bg-white/10 text-white text-[10px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-            Tap to talk
-          </div>
-        )}
-        {isListening && (
-          <div className="absolute -bottom-7 left-1/2 -translate-x-1/2">
-            <span className="text-[10px] text-cyan-400 uppercase tracking-widest font-medium animate-pulse whitespace-nowrap">
-              Listening...
-            </span>
-          </div>
-        )}
-        {isSpeakingWelcome && (
-          <div className="absolute -bottom-7 left-1/2 -translate-x-1/2">
-            <span className="text-[10px] text-purple-400 uppercase tracking-widest font-medium whitespace-nowrap">
-              Speaking...
-            </span>
-          </div>
-        )}
       </div>
-
-      {/* Language picker */}
-      <div className="absolute top-1/2 -translate-y-1/2 -left-12 flex flex-col items-center">
-        <button
-          onClick={e => { e.stopPropagation(); setShowLangPicker(!showLangPicker); }}
-          className="p-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-gray-400 hover:text-white transition-all cursor-pointer"
-          title="Select language"
-        >
-          <span>{currentLang.flag}</span>
-        </button>
-
-        <AnimatePresence>
-          {showLangPicker && (
-            <motion.div
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -8 }}
-              className="absolute left-full ml-2 top-0 bg-[#0a0a0a] border border-white/10 rounded-xl p-1 z-50 min-w-[120px] shadow-2xl"
-            >
-              {LANGUAGES.map(lang => (
-                <button
-                  key={lang.code}
-                  onClick={e => { e.stopPropagation(); setSelectedLang(lang.code); setShowLangPicker(false); }}
-                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
-                    selectedLang === lang.code
-                      ? 'bg-white/10 text-white'
-                      : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                  }`}
-                >
-                  <span>{lang.flag}</span>
-                  <span>{lang.name}</span>
-                </button>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Live transcription bubble */}
-      <AnimatePresence>
-        {(isListening || fullText) && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="absolute bottom-full mb-10 w-72 md:w-88 left-1/2 -translate-x-1/2"
-          >
-            <div className="p-4 rounded-2xl bg-[#0d0d0d]/95 backdrop-blur-xl border border-white/10 relative shadow-2xl">
-              {fullText && !isListening && (
-                <button
-                  onClick={() => { setTranscript(''); setInterimText(''); currentTextRef.current = ''; }}
-                  className="absolute top-2 right-2 text-gray-500 hover:text-white transition-colors cursor-pointer"
-                >
-                  <X size={14} />
-                </button>
-              )}
-              <p className="text-sm text-white font-light leading-relaxed text-center">
-                {transcript}
-                <span className="text-cyan-300">{interimText}</span>
-                {isListening && !fullText && (
-                  <span className="text-gray-500 italic">I'm listening...</span>
-                )}
-              </p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Error */}
       {error && (
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="absolute top-full mt-2 text-xs text-red-400 whitespace-nowrap text-center"
-        >
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] text-red-400 whitespace-nowrap bg-red-500/10 px-2 py-0.5 rounded-full">
           {error}
         </motion.p>
       )}
