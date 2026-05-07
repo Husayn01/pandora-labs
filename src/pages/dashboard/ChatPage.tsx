@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, User, Send, Loader2, MessageSquarePlus, Shield, Info } from 'lucide-react';
+import { Bot, User, Send, Loader2, MessageSquarePlus, Shield, Info, Mic } from 'lucide-react';
 import { VoiceInput, TaskProgress } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -28,7 +28,8 @@ export default function ChatPage() {
   const [inputText, setInputText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [progressStatus, setProgressStatus] = useState('');
-  
+  const [isVoiceMode, setIsVoiceMode] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch past conversations
@@ -40,7 +41,6 @@ export default function ChatPage() {
         .select('id, title, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-      
       if (data) setConversations(data);
     };
     fetchConversations();
@@ -81,6 +81,25 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages, isProcessing]);
 
+  const playTTS = async (text: string) => {
+    try {
+      const ttsResponse = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (ttsResponse.ok) {
+        const blob = await ttsResponse.blob();
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audio.onended = () => URL.revokeObjectURL(url);
+        audio.play().catch(e => console.warn('Audio auto-play blocked:', e));
+      }
+    } catch (e) {
+      console.error('TTS playback failed:', e);
+    }
+  };
+
   const handleSendMessage = async (text: string) => {
     if (!text.trim() || !user || isProcessing) return;
 
@@ -100,6 +119,8 @@ export default function ChatPage() {
       const { data: session } = await supabase.auth.getSession();
       const token = session.session?.access_token;
 
+      if (!token) throw new Error('Not authenticated');
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -114,13 +135,11 @@ export default function ChatPage() {
       });
 
       const data = await response.json();
-
       if (!response.ok) throw new Error(data.error || 'Failed to send message');
 
-      // Update active conversation if it was newly created
+      // Update active conversation if newly created
       if (data.conversationId && !activeConversationId) {
         setActiveConversationId(data.conversationId);
-        // Refresh conversations list
         const { data: convs } = await supabase
           .from('conversations')
           .select('id, title, created_at')
@@ -140,30 +159,19 @@ export default function ChatPage() {
 
       setMessages(prev => [...prev, agentMessage]);
 
-      // Play TTS for the agent's response
-      try {
-        const ttsResponse = await fetch('/api/tts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: data.reply })
-        });
-        
-        if (ttsResponse.ok) {
-          const blob = await ttsResponse.blob();
-          const url = URL.createObjectURL(blob);
-          const audio = new Audio(url);
-          audio.onended = () => URL.revokeObjectURL(url);
-          audio.play().catch(e => console.warn('Audio auto-play blocked by browser:', e));
-        }
-      } catch (e) {
-        console.error('Failed to play TTS for agent response:', e);
+      // Only speak the response aloud if user is in voice mode
+      if (isVoiceMode) {
+        await playTTS(data.reply);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Chat error:', error);
+      const errorMsg = error.message === 'Not authenticated'
+        ? 'Session expired. Please refresh and log in again.'
+        : `Error: ${error.message || 'Could not reach the Pandora Router.'}`;
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         sender_type: 'system',
-        content: 'Error: Could not reach the Pandora Router.',
+        content: errorMsg,
         created_at: new Date().toISOString(),
       }]);
     } finally {
@@ -180,11 +188,11 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-[calc(100vh-theme(spacing.16))] md:h-screen bg-[#050505]">
-      
-      {/* Sidebar - Conversation History (Hidden on mobile for now) */}
+
+      {/* Sidebar - Conversation History */}
       <div className="hidden md:flex w-64 flex-col border-r border-white/5 bg-[#0a0a0a]">
         <div className="p-4 border-b border-white/5">
-          <button 
+          <button
             onClick={handleNewChat}
             className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl bg-white/5 text-sm font-medium text-white hover:bg-white/10 transition-colors cursor-pointer"
           >
@@ -193,6 +201,11 @@ export default function ChatPage() {
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          {conversations.length === 0 && (
+            <p className="text-xs text-gray-600 text-center pt-6 px-3 font-light">
+              Your conversations will appear here.
+            </p>
+          )}
           {conversations.map(conv => (
             <button
               key={conv.id}
@@ -211,36 +224,32 @@ export default function ChatPage() {
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col relative overflow-hidden">
-        
+
         {/* Header */}
-        <div className="h-14 border-b border-white/5 bg-[#050505]/80 backdrop-blur-md flex items-center px-6 shrink-0 z-10">
+        <div className="h-14 border-b border-white/5 bg-[#050505]/80 backdrop-blur-md flex items-center justify-between px-6 shrink-0 z-10">
           <div className="flex items-center gap-2">
             <Shield size={16} className="text-white" />
             <span className="text-sm font-medium text-white">Pandora Router</span>
             <span className="px-2 py-0.5 rounded-full bg-white/10 text-[10px] text-gray-300 uppercase tracking-widest ml-2">Core Active</span>
           </div>
+          {isVoiceMode && (
+            <span className="flex items-center gap-1.5 text-[10px] text-cyan-400 uppercase tracking-widest font-medium animate-pulse">
+              <Mic size={10} /> Voice Mode
+            </span>
+          )}
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-32">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-56">
           {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto">
-              <div className="w-16 h-16 rounded-2xl bg-[#111] border border-white/10 flex items-center justify-center mb-6">
-                <Bot size={32} className="text-white opacity-50" />
+            <div className="h-full flex flex-col items-center justify-center text-center max-w-sm mx-auto">
+              <div className="w-16 h-16 rounded-2xl bg-[#0a0a0a] border border-white/10 flex items-center justify-center mb-5">
+                <Bot size={28} className="text-white/40" />
               </div>
-              <h2 className="text-xl font-medium text-white mb-2 tracking-tight">How can I help you?</h2>
-              <p className="text-sm text-gray-400 font-light mb-8">
-                Send a message or tap the mic. I'll route your request to the right agent in your swarm.
+              <h2 className="text-lg font-medium text-white mb-2 tracking-tight">Talk to Pandora</h2>
+              <p className="text-sm text-gray-500 font-light leading-relaxed">
+                Type a message or tap the orb to speak. Pandora will route your request to the right agent.
               </p>
-              
-              <div className="w-full space-y-2 text-left">
-                <p className="text-xs text-gray-500 uppercase tracking-widest mb-3 text-center">Suggestions</p>
-                {['"Schedule a meeting with John for tomorrow"', '"What is my revenue this week?"', '"Reply to customer support tickets"'].map(s => (
-                  <button key={s} onClick={() => handleSendMessage(s.replace(/"/g, ''))} className="block w-full p-3 rounded-xl bg-white/5 border border-white/5 text-sm text-gray-300 hover:bg-white/10 transition-colors cursor-pointer text-center font-light">
-                    {s}
-                  </button>
-                ))}
-              </div>
             </div>
           ) : (
             <div className="max-w-3xl mx-auto space-y-6">
@@ -263,19 +272,18 @@ export default function ChatPage() {
                         )}
                       </div>
                     )}
-                    
+
                     <div className={`flex flex-col max-w-[80%] ${msg.sender_type === 'user' ? 'items-end' : 'items-start'}`}>
                       {msg.sender_type === 'agent' && msg.agent_name && (
                         <span className="text-[10px] text-gray-500 uppercase tracking-widest mb-1 ml-1">
                           {msg.agent_name}
                         </span>
                       )}
-                      
                       <div className={`p-4 rounded-2xl text-sm font-light leading-relaxed ${
-                        msg.sender_type === 'user' 
-                          ? 'bg-white text-black rounded-tr-sm' 
+                        msg.sender_type === 'user'
+                          ? 'bg-white text-black rounded-tr-sm'
                           : msg.sender_type === 'system'
-                          ? 'bg-transparent text-gray-500 text-xs text-center w-full my-2'
+                          ? 'bg-transparent text-red-400/80 text-xs text-center w-full my-2 italic'
                           : 'bg-[#111] border border-white/10 text-gray-200 rounded-tl-sm'
                       }`}>
                         {msg.content}
@@ -284,17 +292,15 @@ export default function ChatPage() {
                   </motion.div>
                 ))}
               </AnimatePresence>
-              
+
               {isProcessing && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-4">
                   <div className="w-8 h-8 rounded-full bg-[#151515] border border-white/20 flex items-center justify-center shrink-0 mt-1">
                     <Bot size={14} className="text-white" />
                   </div>
                   <div className="flex items-center mt-1">
-                    <TaskProgress 
-                      steps={[
-                        { label: progressStatus || 'Processing...', status: 'active' }
-                      ]} 
+                    <TaskProgress
+                      steps={[{ label: progressStatus || 'Processing...', status: 'active' }]}
                       className="bg-transparent border-none p-0"
                     />
                   </div>
@@ -306,10 +312,10 @@ export default function ChatPage() {
         </div>
 
         {/* Input Area */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-[#050505] via-[#050505] to-transparent pointer-events-none">
+        <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-[#050505] via-[#050505]/95 to-transparent pointer-events-none">
           <div className="max-w-3xl mx-auto relative pointer-events-auto">
-            
-            {/* Status indicator */}
+
+            {/* Status pill */}
             <div className="absolute -top-16 left-0 right-0 flex justify-center pointer-events-none">
               {progressStatus && (
                 <div className="px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-medium text-white shadow-xl backdrop-blur-md flex items-center gap-2">
@@ -319,16 +325,17 @@ export default function ChatPage() {
               )}
             </div>
 
-            {/* Voice Orb - Centered prominently */}
+            {/* Voice Orb */}
             <div className="flex justify-center mb-4 relative z-20">
-              <VoiceInput 
-                onTranscript={handleSendMessage} 
+              <VoiceInput
+                onTranscript={handleSendMessage}
                 onProgress={(status) => setProgressStatus(status)}
+                onVoiceModeChange={setIsVoiceMode}
                 autoSendDelay={2000}
               />
             </div>
-            
-            {/* Text Input Fallback */}
+
+            {/* Text Input */}
             <div className="relative flex items-center bg-[#111] border border-white/10 rounded-2xl p-2 pl-4 focus-within:border-white/30 transition-colors shadow-2xl z-10">
               <input
                 type="text"
@@ -344,19 +351,18 @@ export default function ChatPage() {
                 className="flex-1 bg-transparent text-white text-sm placeholder-gray-500 focus:outline-none font-light"
                 disabled={isProcessing}
               />
-              
               <button
                 onClick={() => handleSendMessage(inputText)}
                 disabled={!inputText.trim() || isProcessing}
-                className="w-10 h-10 ml-2 rounded-xl bg-white text-black flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 transition-colors cursor-pointer shrink-0"
+                className="w-10 h-10 ml-2 rounded-xl bg-white text-black flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-200 transition-colors cursor-pointer shrink-0"
               >
                 <Send size={16} />
               </button>
             </div>
-            
-            <div className="text-center mt-3 flex items-center justify-center gap-1.5 text-[10px] text-gray-500 font-light">
+
+            <div className="text-center mt-3 flex items-center justify-center gap-1.5 text-[10px] text-gray-600 font-light">
               <Info size={10} />
-              Pandora can make mistakes. Check important information.
+              Pandora can make mistakes. Always verify important information.
             </div>
           </div>
         </div>
