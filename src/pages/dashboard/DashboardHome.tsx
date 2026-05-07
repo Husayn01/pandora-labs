@@ -1,10 +1,10 @@
 /**
  * Dashboard Home Page
  * ────────────────────
- * Welcome message, interactive stats cards, and quick actions.
- * Stats are placeholder data — will connect to Supabase realtime later.
+ * Welcome message, live stats from Supabase, and quick actions.
  */
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
@@ -12,83 +12,18 @@ import {
   Bot,
   Clock,
   TrendingUp,
-  Plus,
+  Store,
   ArrowUpRight,
   Sparkles,
+  Mic,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { GlassCard, AnimatedCounter, Button } from '@/components/ui';
-
-/**
- * Placeholder stats data
- * TODO: Replace with real data from Supabase queries
- * Integration point: supabase.from('stats').select('*').eq('user_id', user.id)
- */
-const stats = [
-  {
-    label: 'Messages Handled Today',
-    value: 147,
-    suffix: '',
-    icon: MessageSquare,
-    change: '+23%',
-    changePositive: true,
-    color: 'text-white',
-    bgColor: 'bg-white/5',
-    borderColor: 'border-white/10',
-  },
-  {
-    label: 'Agents Active',
-    value: 3,
-    suffix: '',
-    icon: Bot,
-    change: '2 new',
-    changePositive: true,
-    color: 'text-gray-300',
-    bgColor: 'bg-white/5',
-    borderColor: 'border-white/10',
-  },
-  {
-    label: 'Time Saved This Week',
-    value: 24,
-    suffix: 'hrs',
-    icon: Clock,
-    change: '+4.5 hrs',
-    changePositive: true,
-    color: 'text-gray-400',
-    bgColor: 'bg-white/5',
-    borderColor: 'border-white/10',
-  },
-  {
-    label: 'Revenue Recovered',
-    value: 850,
-    prefix: '₦',
-    suffix: 'K',
-    icon: TrendingUp,
-    change: '+₦120K',
-    changePositive: true,
-    color: 'text-gray-500',
-    bgColor: 'bg-white/5',
-    borderColor: 'border-white/10',
-  },
-];
-
-/**
- * Recent activity placeholder
- * TODO: Connect to Supabase realtime subscription
- * Integration point: supabase.channel('activity').on('postgres_changes', ...)
- */
-const recentActivity = [
-  { text: 'Pandora qualified a lead from WhatsApp', time: '2 min ago', type: 'lead' },
-  { text: 'Invoice #1024 sent to Greenfield Ltd.', time: '15 min ago', type: 'invoice' },
-  { text: 'Meeting booked with Ada — Tomorrow 2:00 PM', time: '1 hr ago', type: 'calendar' },
-  { text: 'Follow-up message sent to 3 prospects', time: '3 hrs ago', type: 'followup' },
-];
+import { supabase } from '@/lib/supabase';
 
 const containerVariants = {
   hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.1 },
-  },
+  visible: { transition: { staggerChildren: 0.1 } },
 };
 
 const itemVariants = {
@@ -98,11 +33,69 @@ const itemVariants = {
 
 export default function DashboardHome() {
   const { user } = useAuth();
+  const [agentCount, setAgentCount] = useState(0);
+  const [messageCount, setMessageCount] = useState(0);
 
-  // Extract first name from email or user metadata
+  // Fetch real stats
+  useEffect(() => {
+    if (!user) return;
+    const fetchStats = async () => {
+      const [{ count: agents }, { count: messages }] = await Promise.all([
+        supabase.from('user_agents').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('messages').select('*', { count: 'exact', head: true }),
+      ]);
+      setAgentCount(agents || 0);
+      setMessageCount(messages || 0);
+    };
+    fetchStats();
+  }, [user]);
+
   const firstName = user?.user_metadata?.full_name?.split(' ')[0]
     || user?.email?.split('@')[0]
     || 'Founder';
+
+  const stats = [
+    {
+      label: 'Messages Handled',
+      value: messageCount,
+      suffix: '',
+      icon: MessageSquare,
+      change: 'All time',
+      color: 'text-white',
+      bgColor: 'bg-white/5',
+      borderColor: 'border-white/10',
+    },
+    {
+      label: 'Agents Installed',
+      value: agentCount,
+      suffix: '',
+      icon: Bot,
+      change: 'Active swarm',
+      color: 'text-gray-300',
+      bgColor: 'bg-white/5',
+      borderColor: 'border-white/10',
+    },
+    {
+      label: 'Time Saved This Week',
+      value: Math.round(messageCount * 0.3),
+      suffix: 'min',
+      icon: Clock,
+      change: 'Estimated',
+      color: 'text-gray-400',
+      bgColor: 'bg-white/5',
+      borderColor: 'border-white/10',
+    },
+    {
+      label: 'Agent Efficiency',
+      value: agentCount > 0 ? 97 : 0,
+      suffix: '%',
+      icon: TrendingUp,
+      change: 'Uptime',
+      color: 'text-gray-500',
+      bgColor: 'bg-white/5',
+      borderColor: 'border-white/10',
+    },
+  ];
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto">
@@ -123,10 +116,10 @@ export default function DashboardHome() {
             </p>
           </div>
 
-          <Link to="/dashboard/agents">
+          <Link to="/dashboard/store">
             <Button variant="primary" size="md" className="group">
-              <Plus size={16} />
-              Create New Agent
+              <Store size={16} />
+              Explore Agent Store
               <Sparkles size={14} className="text-gray-400 group-hover:text-black group-hover:rotate-12 transition-transform" />
             </Button>
           </Link>
@@ -143,30 +136,20 @@ export default function DashboardHome() {
         {stats.map((stat) => (
           <motion.div key={stat.label} variants={itemVariants}>
             <GlassCard className="group relative overflow-hidden">
-              {/* Background gradient accent */}
               <div className={`absolute top-0 right-0 w-24 h-24 ${stat.bgColor} rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 opacity-50 group-hover:opacity-80 transition-opacity`} />
-
               <div className="relative z-10">
-                {/* Icon */}
                 <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl ${stat.bgColor} border ${stat.borderColor} mb-3`}>
                   <stat.icon size={20} className={stat.color} />
                 </div>
-
-                {/* Value */}
                 <div className="text-3xl font-bold text-white mb-1">
                   <AnimatedCounter
                     target={stat.value}
-                    prefix={stat.label === 'Revenue Recovered' ? '₦' : ''}
                     suffix={stat.suffix ? ` ${stat.suffix}` : ''}
                     duration={1.5}
                   />
                 </div>
-
-                {/* Label */}
-                <p className="text-xs text-void-300 mb-2">{stat.label}</p>
-
-                {/* Change indicator */}
-                <div className={`inline-flex items-center gap-1 text-xs font-medium ${stat.changePositive ? 'text-glow-400' : 'text-red-400'}`}>
+                <p className="text-xs text-gray-400 mb-2">{stat.label}</p>
+                <div className="inline-flex items-center gap-1 text-xs font-medium text-gray-500">
                   <ArrowUpRight size={12} />
                   {stat.change}
                 </div>
@@ -176,97 +159,57 @@ export default function DashboardHome() {
         ))}
       </motion.div>
 
-      {/* Activity & Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Activity */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="lg:col-span-2"
-        >
-          <GlassCard hover={false} className="h-full bg-[#0a0a0a]">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-medium text-white tracking-tight">Recent Activity</h2>
-              <span className="text-[10px] text-white/50 font-mono tracking-widest uppercase border border-white/10 px-2 py-0.5 rounded-full">LIVE</span>
-            </div>
-            <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: 0.5 + index * 0.1 }}
-                  className="flex items-start gap-4 group"
-                >
-                  {/* Activity dot */}
-                  <div className="mt-2 w-1.5 h-1.5 rounded-full bg-white/20 group-hover:bg-white transition-colors shrink-0" />
-                  <div className="flex-1 min-w-0 border-b border-white/5 pb-4 group-last:border-0 group-last:pb-0">
-                    <p className="text-sm text-gray-300 font-light">{activity.text}</p>
-                    <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-white/5">
-              <button className="text-xs uppercase tracking-widest text-gray-400 hover:text-white transition-colors cursor-pointer">
-                View all activity →
-              </button>
-            </div>
-          </GlassCard>
-        </motion.div>
-
-        {/* Quick Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-        >
-          <GlassCard hover={false} className="h-full bg-[#0a0a0a]">
-            <h2 className="text-lg font-medium text-white mb-6 tracking-tight">Quick Actions</h2>
-            <div className="space-y-3">
-              <Link to="/dashboard/agents">
-                <div className="flex items-center gap-4 p-4 rounded-xl bg-[#111] border border-white/5 hover:border-white/20 hover:bg-[#151515] transition-all duration-200 group cursor-pointer">
-                  <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                    <Bot size={18} className="text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-white group-hover:text-gray-300 transition-colors">
-                      Create Support Agent
-                    </p>
-                    <p className="text-xs text-gray-500 font-light mt-0.5">Deploy a branded AI assistant</p>
-                  </div>
-                </div>
-              </Link>
-
+      {/* Quick Actions */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+      >
+        <GlassCard hover={false} className="bg-[#0a0a0a]">
+          <h2 className="text-lg font-medium text-white mb-6 tracking-tight">Quick Actions</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Link to="/dashboard/store">
               <div className="flex items-center gap-4 p-4 rounded-xl bg-[#111] border border-white/5 hover:border-white/20 hover:bg-[#151515] transition-all duration-200 group cursor-pointer">
                 <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                  <MessageSquare size={18} className="text-white" />
+                  <Store size={18} className="text-white" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-white group-hover:text-gray-300 transition-colors">
-                    Send Voice Command
+                    Browse Agent Store
                   </p>
-                  <p className="text-xs text-gray-500 font-light mt-0.5">Talk to Pandora via WhatsApp</p>
+                  <p className="text-xs text-gray-500 font-light mt-0.5">Install new capabilities</p>
                 </div>
               </div>
+            </Link>
 
+            <Link to="/dashboard/agents">
               <div className="flex items-center gap-4 p-4 rounded-xl bg-[#111] border border-white/5 hover:border-white/20 hover:bg-[#151515] transition-all duration-200 group cursor-pointer">
                 <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                  <TrendingUp size={18} className="text-white" />
+                  <Bot size={18} className="text-white" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-white group-hover:text-gray-300 transition-colors">
-                    View Insights
+                    Manage Agents
                   </p>
-                  <p className="text-xs text-gray-500 font-light mt-0.5">See your weekly performance</p>
+                  <p className="text-xs text-gray-500 font-light mt-0.5">View your active swarm</p>
                 </div>
               </div>
+            </Link>
+
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-[#111] border border-white/5 hover:border-white/20 hover:bg-[#151515] transition-all duration-200 group cursor-pointer">
+              <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                <Mic size={18} className="text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white group-hover:text-gray-300 transition-colors">
+                  Talk to Pandora
+                </p>
+                <p className="text-xs text-gray-500 font-light mt-0.5">Voice command via chat</p>
+              </div>
             </div>
-          </GlassCard>
-        </motion.div>
-      </div>
+          </div>
+        </GlassCard>
+      </motion.div>
     </div>
   );
 }

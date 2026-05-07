@@ -8,3 +8,4 @@ export { Input } from './Input';
 export { AnimatedCounter } from './AnimatedCounter';
 export { ParticleField } from './ParticleField';
 export { PlaceholderLogo } from './PlaceholderLogo';
+export { VoiceInput, TaskProgress } from './VoiceInput';

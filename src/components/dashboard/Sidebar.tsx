@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home,
   Bot,
+  Store,
   Activity,
   BarChart3,
   Settings,
@@ -24,6 +25,7 @@ import { PlaceholderLogo } from '@/components/ui';
 const navItems = [
   { icon: Home, label: 'Home', path: '/dashboard' },
   { icon: Bot, label: 'My Agents', path: '/dashboard/agents' },
+  { icon: Store, label: 'Agent Store', path: '/dashboard/store' },
   { icon: Activity, label: 'Operations', path: '/dashboard/operations' },
   { icon: BarChart3, label: 'Insights', path: '/dashboard/insights' },
   { icon: Settings, label: 'Settings', path: '/dashboard/settings' },

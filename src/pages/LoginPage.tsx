@@ -106,27 +106,6 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <div className="pt-2">
-              <Button 
-                variant="outline" 
-                size="lg" 
-                className="w-full text-xs tracking-widest uppercase border-pandora-500/30 hover:bg-pandora-500/10 hover:border-pandora-500/50"
-                onClick={async () => {
-                  setLoading(true);
-                  setError('');
-                  const { error } = await signIn('demo@pandoralabs.ai', 'demo1234');
-                  if (error) {
-                    setError(`Demo login failed: ${error.message}`);
-                    setLoading(false);
-                  } else {
-                    navigate('/dashboard');
-                  }
-                }}
-                disabled={loading}
-              >
-                Use Demo Account
-              </Button>
-            </div>
 
             <p className="text-center text-sm text-gray-500 pt-6 border-t border-white/5">
               Don't have an account?{' '}
